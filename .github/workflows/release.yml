@@ -2,12 +2,12 @@ name: Pre-release
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches:
+      - "main" 
 
 jobs:
   create-release:
-    name: Build and Create Tagged release
+    name: Build and Create Commit Release
     runs-on: ubuntu-latest
 
     steps:
@@ -15,10 +15,9 @@ jobs:
         run: sudo apt install zip
 
       - name: Checkout source code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
-          ref: ${{ github.event.repository.default_branch }}
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4.0.0
@@ -28,8 +27,8 @@ jobs:
       - name: Get variables
         id: get_vars
         run: |
-          echo '::set-output name=SHORT_SHA::$(git rev-parse --short HEAD)'
-          echo '::set-output name=DATE::$(date +'%D')'
+          echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          echo "DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
 
       - name: Setup node
         uses: actions/setup-node@v3
@@ -45,7 +44,7 @@ jobs:
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          pnpm version ${{ github.ref_name }} --git-tag-version false
+          pnpm version "0.0.0-${{ env.SHORT_SHA }}" --git-tag-version false
 
       - name: Run build
         run: pnpm build
@@ -53,7 +52,7 @@ jobs:
       - name: Update repository
         run: |
           git add .
-          git commit -am '${{ github.ref_name }}'
+          git commit -am "Build for commit ${{ env.SHORT_SHA }}"
           git push
 
       - name: Bundle files
@@ -65,14 +64,9 @@ jobs:
           cd ./temp && zip -r ../ox_banking.zip ./ox_banking
 
       - name: Create Release
-        uses: 'marvinpinto/action-automatic-releases@v1.2.1'
-        id: auto_release
+        uses: marvinpinto/action-automatic-releases@v1.2.1
         with:
           repo_token: '${{ secrets.GITHUB_TOKEN }}'
-          title: '${{ env.RELEASE_VERSION }}'
+          title: 'Commit: ${{ env.SHORT_SHA }}'
           prerelease: false
-          files: ${{ github.event.repository.name }}.zip
-
-        env:
-          CI: false
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          files: ox_banking.zip
