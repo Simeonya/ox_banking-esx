@@ -37,8 +37,9 @@ createBuilder(
     await createFxmanifest({
       client_scripts: ['@ox_lib/init.lua', 'src/client/client.lua', outfiles.client],
       server_scripts: ['@oxmysql/lib/MySQL.lua', outfiles.server],
+      shared_scripts: ['@es_extended/imports.lua'],
       files: [...files, 'locales/*.json'],
-      dependencies: ['/server:7290', '/onesync', 'ox_core', 'ox_lib', 'oxmysql', 'ox_inventory'],
+      dependencies: ['/server:7290', '/onesync', 'es_extended', 'ox_lib', 'oxmysql', 'ox_inventory'],
       metadata: {
         ui_page: 'dist/web/index.html',
         lua54: 'yes',

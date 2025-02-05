@@ -1,8 +1,10 @@
 import { Config, LoadJsonFile, Locale } from '@common/.';
-import { OxAccountPermissions, OxAccountRole } from '@overextended/ox_core';
 import { cache, getLocales, hideTextUI, requestAnimDict, sleep, waitFor } from '@overextended/ox_lib/client';
 import type { Character } from '../common/typings';
 import { SendTypedNUIMessage, serverNuiCallback } from './utils';
+
+let ESX: any;
+emit('esx:getSharedObject', (obj: any) => { ESX = obj; });
 
 let hasLoadedUi = false;
 let isUiOpen = false;
@@ -15,13 +17,13 @@ function canOpenUi(): boolean {
 function setupUi() {
   if (hasLoadedUi) return;
 
-  const accountRoles: OxAccountRole[] = GlobalState.accountRoles;
+  const accountRoles = ESX.GetAccountRoles();
   const permissions = accountRoles.reduce(
-    (acc, role) => {
-      acc[role] = GlobalState[`accountRole.${role}`] as OxAccountPermissions;
+    (acc: Record<string, any>, role: string) => {
+      acc[role] = ESX.GetAccountPermissions(role);
       return acc;
     },
-    {} as Record<OxAccountRole, OxAccountPermissions>
+    {} as Record<string, any>
   );
 
   SendNUIMessage({
@@ -36,7 +38,7 @@ function setupUi() {
 }
 
 const openAtm = async ({ entity }: { entity: number }) => {
-  if (!canOpenUi) return;
+  if (!canOpenUi()) return;
 
   const atmEnter = await requestAnimDict('mini@atmenter');
 
@@ -44,14 +46,13 @@ const openAtm = async ({ entity }: { entity: number }) => {
   const [cX, cY, cZ] = GetEntityCoords(entity, false);
   const [pX, pY, pZ] = GetEntityCoords(cache.ped, false);
 
-  const doAnim = (entity && DoesEntityExist(entity) && Math.abs((cX - cY) + (cZ - pX) + (pY - pZ)) < 5.0) 
+  const doAnim = (entity && DoesEntityExist(entity) && Math.abs((cX - cY) + (cZ - pX) + (pY - pZ)) < 5.0);
 
-  if (doAnim)
-  {
+  if (doAnim) {
     const [x, y, z] = GetOffsetFromEntityInWorldCoords(entity, 0, -0.7, 1);
     const heading = GetEntityHeading(entity);
     const sequence = OpenSequenceTask(0) as unknown as number;
-  
+
     TaskGoStraightToCoord(0, x, y, z, 1.0, 5000, heading, 0.25);
     TaskPlayAnim(0, atmEnter, 'enter', 4.0, -2.0, 1600, 0, 0.0, false, false, false);
     CloseSequenceTask(sequence);
@@ -76,11 +77,11 @@ const openAtm = async ({ entity }: { entity: number }) => {
 exports('openAtm', openAtm);
 
 const openBank = () => {
-  if (!canOpenUi) return;
+  if (!canOpenUi()) return;
 
   setupUi();
 
-  const playerCash: number = exports.ox_inventory.GetItemCount('money');
+  const playerCash: number = ESX.GetPlayerData().money;
   isUiOpen = true;
 
   hideTextUI();
@@ -150,7 +151,7 @@ RegisterNuiCallback('exit', async (_: any, cb: Function) => {
   isATMopen = false;
 });
 
-on('ox_inventory:itemCount', (itemName: string, count: number) => {
+on('esx_inventory:itemCount', (itemName: string, count: number) => {
   if (!isUiOpen || isATMopen || itemName !== 'money') return;
 
   SendTypedNUIMessage<Character>('refreshCharacter', { cash: count });
