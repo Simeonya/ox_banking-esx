@@ -64,7 +64,7 @@ jobs:
           cp -r ./{dist,data,locales} ./temp/ox_banking
           cd ./temp && zip -r ../ox_banking.zip ./ox_banking
 
-- name: Create Release
+      - name: Create Release
         uses: 'marvinpinto/action-automatic-releases@v1.2.1'
         id: auto_release
         with:
