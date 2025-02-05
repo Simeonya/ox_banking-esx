@@ -64,7 +64,7 @@ jobs:
           cp -r ./{dist,data,locales} ./temp/ox_banking
           cd ./temp && zip -r ../ox_banking.zip ./ox_banking
 
-      - name: Create Release
+- name: Create Release
         uses: 'marvinpinto/action-automatic-releases@v1.2.1'
         id: auto_release
         with:
@@ -72,6 +72,7 @@ jobs:
           title: '${{ env.RELEASE_VERSION }}'
           prerelease: false
           files: ${{ github.event.repository.name }}.zip
+          automatic_release_tag: '${{ github.ref_name }}'
 
         env:
           CI: false
